@@ -19,10 +19,15 @@ class User(Base):
         nullable=False
     )
     
-    full_name: Mapped[str] = mapped_column(
+    first_name: Mapped[str] = mapped_column(
         String(100),
         nullable=False
     )
+
+    last_name: Mapped[str] = mapped_column(
+            String(100),
+            nullable=False
+        )
     
     password_hash: Mapped[str] = mapped_column(
         String(255),
@@ -33,6 +38,12 @@ class User(Base):
         Boolean,
         default=True,
         nullable=False
+    )
+
+    is_verified: Mapped[bool] = mapped_column(
+    Boolean,
+    default=False,
+    nullable=False
     )
 
     created_at: Mapped[datetime] = mapped_column(
