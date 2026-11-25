@@ -1,1 +1,0 @@
-& "C:\Program Files\PostgreSQL\18\bin\psql.exe" -U lifetrack_user -h localhost -p 5432 -d lifetrack_ai

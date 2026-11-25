@@ -1,0 +1,39 @@
+& "C:\Program Files\PostgreSQL\18\bin\psql.exe" -U lifetrack_user -h localhost -p 5432 -d lifetrack_ai
+
+auth.py will handle HTTP requests and responses.
+
+
+
+auth_service.py will handle registration, login, and authentication logic.
+
+
+
+security.py will handle password hashing and verification.
+
+
+app/
+│
+├── api/
+│   └── v1/
+│       └── endpoints/
+│           └── auth.py
+│
+├── core/
+│   ├── config.py
+│   ├── security.py
+│   └── tokens.py
+│
+├── models/
+│   ├── user.py
+│   └── refresh_token.py
+│
+├── schemas/
+│   ├── user.py
+│   └── refresh_token.py
+│
+├── services/
+│   └── auth_service.py
+│
+└── database/
+    ├── base.py
+    └── session.py
