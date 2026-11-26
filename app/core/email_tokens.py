@@ -1,25 +1,38 @@
-from datetime import datetime, timedelta, timezone
-from jose import jwt
-from app.core.config import settings  # Imports application settings, including the secret key for JWT encoding.
 
-SECRET_KEY = settings.SECRET_KEY  # Retrieves the secret key from the application settings for JWT encoding.
-ALGORITHM = settings.ALGORITHM  # Specifies the algorithm used for JWT encoding.
+from datetime import datetime, timedelta, timezone  # Import date and time utilities
+from jose import jwt  # Import JWT encoding and decoding functions
+from jose.exceptions import ExpiredSignatureError, JWTError  # Import JWT error classes
 
-def generate_email_token(email: str) -> str:
-    expire=datetime.now(timezone.utc) + timedelta(minutes=5)  # Sets the token to expire in 5 minutes.
-    payload = {"sub": email, "exp": expire}  # Creates a payload with the email and expiration time.
-    token = jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)  # Encodes the payload into a JWT using the secret key.
-    return token  # Returns the generated token.
+from app.core.config import settings  # Import JWT configuration
 
-def verify_email_token(token: str) -> str:
-    try:
-        payload=jwt.decode(token,SECRET_KEY,algorithms=[ALGORITHM])  # Decodes the JWT using the secret key and algorithm.
-        email=payload.get("sub")  # Retrieves the email from the decoded payload.
-        if email is None:  # Checks if the email is present in the payload.
-            raise ValueError("Invalid token: email not found")  # Raises an error if the email is missing.  
-        return email  # Returns the email if the token is valid.
-    except jwt.ExpiredSignatureError:  # Catches the exception if the token has expired.
-        raise ValueError("Token has expired")  # Raises an error indicating the token has expired.
-    except jwt.JWTError:  # Catches any other JWT-related errors.
-        raise ValueError("Invalid token")  # Raises an error indicating the token is invalid.   
-    
+
+def generate_email_token(email: str) -> str:  # Generate a verification token for an email
+    expire = datetime.now(timezone.utc) + timedelta(minutes=5)  # Set token expiry to 5 minutes
+
+    payload = {  # Create the information stored inside the token
+        "sub": email,  # Store the user's email as the token subject
+        "exp": expire,  # Set the token expiration time
+        "type": "email_verification",  # Identify this as an email verification token
+    }
+
+    token = jwt.encode(payload, settings.EMAIL_SECRET_KEY, algorithm=settings.ALGORITHM)  # Sign the token
+    return token  # Return the generated token
+
+
+def verify_email_token(token: str) -> str:  # Verify a received email verification token
+    try:  # Start token validation
+        payload = jwt.decode(token, settings.EMAIL_SECRET_KEY, algorithms=[settings.ALGORITHM])  # Decode and validate the token
+
+        email = payload.get("sub")  # Extract the email from the token
+        token_type = payload.get("type")  # Extract the token type
+
+        if email is None or token_type != "email_verification":  # Reject missing email or incorrect token type
+            raise ValueError("Invalid email verification token")  # Report an invalid token
+
+        return email  # Return the verified token's email address
+
+    except ExpiredSignatureError:  # Handle an expired token
+        raise ValueError("Email verification link has expired")  # Return an expiry error
+
+    except JWTError:  # Handle other JWT validation errors
+        raise ValueError("Invalid email verification token")  # Return an invalid-token error

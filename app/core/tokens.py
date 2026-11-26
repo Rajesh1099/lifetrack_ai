@@ -10,11 +10,13 @@ ALGORITHM = settings.ALGORITHM  # Specifies the algorithm used for JWT encoding.
 
 def create_access_token(user_id: int) -> str:
     expire = datetime.now(timezone.utc) + timedelta(minutes=15)
+    token_id = secrets.token_urlsafe(32)  # Generate a unique ID for this access token
     
     payload={
         "sub":str(user_id),
         "exp":expire,
-        "type":"access"
+        "type":"access",
+        "jti": token_id  # Store the unique JWT ID
     }
     
     token=jwt.encode(payload,SECRET_KEY,algorithm=ALGORITHM)
@@ -22,17 +24,25 @@ def create_access_token(user_id: int) -> str:
     return token
 
 
-def verify_access_token(token: str) -> int:  # Accepts a JWT access token and returns the user's ID.
-    try:  # Starts checking the token for validity.
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])  # Decodes the token using our secret key.
-        if payload.get("type") != "access":  # Checks whether this is actually an access token.
-            raise ValueError("Invalid token type")  # Rejects email or other types of tokens.
-        user_id = payload.get("sub")  # Extracts the user ID stored in the token.
-        if user_id is None:  # Checks whether the token contains a user ID.
-            raise ValueError("User ID not found")  # Rejects tokens without a user ID.
-        return int(user_id)  # Converts the user ID to an integer and returns it.
-    except (JWTError, ValueError) as exc:  # Catches invalid, expired, or incorrectly formatted tokens.
-        raise ValueError("Invalid or expired access token") from exc  # Returns a clear error to the caller.
+def decode_access_token(token: str) -> dict:  # Validate JWT and return all its claims
+    try:  # Start JWT validation
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])  # Verify signature and expiry
+
+        if payload.get("type") != "access":  # Check token type
+            raise ValueError("Invalid token type")  # Reject incorrect token type
+
+        if not payload.get("sub"):  # Check user ID exists
+            raise ValueError("User ID not found")  # Reject missing user ID
+
+        if not payload.get("jti"):  # Check unique token ID exists
+            raise ValueError("JWT ID not found")  # Reject missing JWT ID
+
+        int(payload["sub"])  # Validate that user ID is an integer
+
+        return payload  # Return all validated JWT claims
+
+    except (JWTError, ValueError) as exc:  # Handle invalid or expired tokens
+        raise ValueError("Invalid or expired access token") from exc  # Return clear error    
 
 def create_refresh_token() -> str:
     refresh_token = secrets.token_urlsafe(64)  # Creates a cryptographically secure random string.
